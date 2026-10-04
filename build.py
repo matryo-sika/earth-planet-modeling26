@@ -32,7 +32,7 @@ PAGES = [
     {
         "file": "index.html",
         "title": f"{SITE} | {COURSE}",
-        "description": "情報工学科4年生向け「情報工学実験」全3回：地球と惑星のモデリング。C言語での数値シミュレーションとgnuplotによる可視化。",
+        "description": "情報工学科4年生向け「情報工学実験」全3回：地球と惑星のモデリング。数値シミュレーションと可視化。",
     },
     {
         "file": "day1.html",
@@ -83,7 +83,8 @@ LAYOUT = """<!doctype html>
 </div>
 
 <footer>
-  {site} &middot; {course}
+  {site} &middot; {course}<br>
+  &copy; 2026 松岡亮
 </footer>
 
 <script src="vendor/katex/katex.min.js"></script>
@@ -105,11 +106,11 @@ LAYOUT = """<!doctype html>
 """
 
 HERO_INDEX = """<header class="hero">
-  <div class="kicker">情報工学実験 &middot; 全3回（各回1.5時間&times;2コマ）</div>
+  <div class="kicker">松江高専情報工学科 &middot; 情報工学実験（2026年後期） &middot; 全3回（各回1.5時間&times;2コマ）</div>
   <h1>地球と惑星のモデリング</h1>
   <p class="lead">
     地球のエネルギー収支モデルと、惑星の運動を支配する重力多体問題を題材に、
-    微分方程式を数値的に解くアルゴリズムをC言語で実装し、gnuplotで可視化します。
+    微分方程式を数値的に解くアルゴリズムを実装し、可視化します。
   </p>
   <div class="meta-badges">
     <span>対象: 情報工学科4年生</span>
