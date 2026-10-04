@@ -1,0 +1,201 @@
+<section class="day-page">
+  <div class="goal-box">
+    <h4>この回のねらい</h4>
+    <ul>
+      <li>ニュートンの万有引力の法則から惑星の運動方程式を立てられるようになる</li>
+      <li>Euler法をそのまま2次元・重力系に適用すると何が起きるかを確認する</li>
+      <li>リープ・フロッグ法へ改造し、エネルギー保存の点でEuler法との違いを比較する</li>
+      <li>（発展）2体を超える一般のN体シミュレーションへ拡張する</li>
+    </ul>
+  </div>
+
+  <h3>座学：運動方程式とEuler法の限界</h3>
+  <p>
+    質量 $M$ の天体（例えば太陽）のまわりを運動する質点の位置ベクトルを $\mathbf{r}$ とすると、
+    万有引力による運動方程式は
+  </p>
+  <p>
+    $$\frac{d^2\mathbf{r}}{dt^2} = -\frac{GM}{|\mathbf{r}|^2}\frac{\mathbf{r}}{|\mathbf{r}|}$$
+  </p>
+  <p>
+    と書けます（$G$は万有引力定数）。これは2階の微分方程式なので、速度 $\mathbf{v} = d\mathbf{r}/dt$ を新しい変数として導入し、
+  </p>
+  <p>
+    $$\frac{d\mathbf{r}}{dt} = \mathbf{v}, \qquad \frac{d\mathbf{v}}{dt} = \mathbf{a}(\mathbf{r}) = -\frac{GM}{|\mathbf{r}|^2}\frac{\mathbf{r}}{|\mathbf{r}|}$$
+  </p>
+  <p>
+    という1階の連立常微分方程式に直します。この形にすれば、<a href="day2.html">第2回</a>で使ったEuler法の枠組み
+    （<code>x = x + dt*v; v = v + dt*a;</code>）がそのまま使えます。
+  </p>
+  <p>
+    ただし、振動や周回運動のような「エネルギーが保存されるべき」系にEuler法を使うと、
+    刻み幅をどれだけ細かくしても、計算を続けるうちにエネルギーがじわじわと増えていってしまう
+    という性質があります。今日はこれを実際に目で見て確認し、その対策として
+    <strong>リープ・フロッグ法</strong>という改良された解法に改造します。
+  </p>
+  <p>
+    $$\begin{aligned}
+    &\mathbf{v}_{n+1/2} = \mathbf{v}_n + \frac{\Delta t}{2}\,\mathbf{a}(\mathbf{r}_n), \\
+    &\mathbf{r}_{n+1} = \mathbf{r}_n + \Delta t\,\mathbf{v}_{n+1/2}, \\
+    &\mathbf{v}_{n+1} = \mathbf{v}_{n+1/2} + \frac{\Delta t}{2}\,\mathbf{a}(\mathbf{r}_{n+1}).
+    \end{aligned}$$
+  </p>
+  <p>
+    半ステップ分ずらして速度を更新することで、Euler法とほぼ同じ計算量のまま、
+    長時間にわたってエネルギーがほとんど保存されるようになります。
+  </p>
+
+  <h3>実験1：Euler法の確認（単振動）</h3>
+  <p>
+    重力の2体問題に進む前に、もう一度Euler法の基本構造を、今度は2変数（位置xと速度v）の系で
+    確認しておきます。題材はばねの単振動 $\dfrac{d^2x}{dt^2} = -\dfrac{k}{m}x$ です。
+    このプログラムでは、位置エネルギーと運動エネルギーの和（力学的エネルギー）も一緒に出力しています。
+  </p>
+
+  <div class="code-file">
+    <div class="code-file-header">
+      <code>day3_oscillator_euler.c</code>
+      <a href="code/day3_oscillator_euler.c" download>ダウンロード</a>
+    </div>
+    <pre><code>{{FILE:day3_oscillator_euler.c}}</code></pre>
+  </div>
+
+  <div class="code-file">
+    <div class="code-file-header">
+      <code>day3_plot_oscillator.gp</code>
+      <a href="code/day3_plot_oscillator.gp" download>ダウンロード</a>
+    </div>
+    <pre><code>{{FILE:day3_plot_oscillator.gp}}</code></pre>
+  </div>
+
+  <div class="point-box">
+    <span class="label">確認してみよう</span>
+    振動の振幅とエネルギーが、時間とともにどちらもゆっくり増えていく様子が確認できるはずです。
+    本来、摩擦のない単振動のエネルギーは一定に保たれるはずなので、これはEuler法の数値誤差です。
+  </div>
+
+  <h3>課題1：2体問題（Euler法）</h3>
+  <div class="task-box">
+    <span class="label">改造のポイント</span>
+    <code>day3_oscillator_euler.c</code>と同じ「加速度を計算 &rarr; 速度を更新 &rarr; 位置を更新」という
+    構造のまま、変数を1次元$(x, v)$から2次元$(x, y, v_x, v_y)$に増やし、加速度の式をばねの復元力
+    $-(k/m)x$ から万有引力 $-GM\mathbf{r}/|\mathbf{r}|^3$ に置き換えてください。
+    太陽を原点に固定した、地球の円軌道に近い初期条件を使います。
+  </div>
+
+  <div class="spec-box">
+    <span class="label">出力仕様</span>
+    <p>この仕様どおりにファイルを出力すれば、このページに掲載しているgnuplotスクリプトがそのまま動作します。仕様を頼りに、自分のプログラムを完成させてください。</p>
+    <table>
+      <tbody>
+        <tr><th>出力ファイル</th><td><code>orbit_euler.dat</code></td></tr>
+        <tr><th>書式</th><td>テキストファイル、空白区切り、1行に1データ。<code>#</code>で始まる行はコメントとして扱われ、gnuplotは無視します（見出し行を入れても構いません）。</td></tr>
+        <tr><th>列</th><td>1列目：時刻 <code>t</code> [s]　／　2列目：<code>x</code> [m]　／　3列目：<code>y</code> [m]　／　4列目：<code>u</code>（<code>x</code>方向の速度 $v_x$）[m/s]　／　5列目：<code>v</code>（<code>y</code>方向の速度 $v_y$）[m/s]　／　6列目：単位質量あたりの力学的エネルギー $E=\tfrac12|\mathbf{v}|^2-GM/|\mathbf{r}|$ [J/kg]</td></tr>
+        <tr><th>定数・初期条件</th><td><code>G = 6.674e-11</code>、<code>M = 1.989e30</code>（太陽は原点に固定）。地球：<code>x = 1.496e11</code>、<code>y = 0</code>、<code>vx = 0</code>、<code>vy = 2.978e4</code></td></tr>
+        <tr><th>計算条件</th><td><code>dt = 6 &times; 3600</code> s（6時間）、<code>nsteps = 4 * 365 * 4</code>（約4年分）</td></tr>
+        <tr><th>出力のタイミング</th><td>各ステップで、<strong>更新する前の</strong>状態を出力する（1行目は初期状態）。Euler法なので、<code>x, y</code>も<code>vx, vy</code>も、更新前の値だけを使って新しい値を求めること</td></tr>
+        <tr><th>データ行数</th><td>5841行（初期状態＋5840ステップ分）</td></tr>
+        <tr><th>自己チェック</th><td>1行目：<code>x = 1.496000e+11</code>、エネルギー &asymp; &minus;4.439144&times;10<sup>8</sup>。最終行ではエネルギーは初期値より増大</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>課題2：リープ・フロッグ法への改造</h3>
+  <div class="task-box">
+    <span class="label">改造のポイント</span>
+    課題1で作ったプログラムの「更新部分だけ」を、座学で確認したリープ・フロッグ法の
+    3行の式に書き換えてください。初期条件・定数・出力する物理量（位置・速度・エネルギー）と列の並びは変えません。
+    加速度を計算する部分を関数<code>acceleration()</code>として切り出しておくと、
+    リープ・フロッグ法のように1ステップの中で2回加速度を計算する場合にコードが書きやすくなります。
+  </div>
+
+  <div class="spec-box">
+    <span class="label">出力仕様</span>
+    <p>この仕様どおりにファイルを出力すれば、このページに掲載しているgnuplotスクリプトがそのまま動作します。仕様を頼りに、自分のプログラムを完成させてください。</p>
+    <table>
+      <tbody>
+        <tr><th>出力ファイル</th><td><code>orbit_leapfrog.dat</code></td></tr>
+        <tr><th>書式・列</th><td><code>orbit_euler.dat</code>とまったく同じ（t, x, y, u, v, エネルギー の6列、5841行）</td></tr>
+        <tr><th>定数・初期条件・刻み</th><td><code>orbit_euler.dat</code>と同じ（更新アルゴリズム以外は何も変えない）</td></tr>
+        <tr><th>出力のタイミング</th><td>各ステップの更新前の状態を出力（1行目は初期状態）。リープ・フロッグ法では、最初に<code>acceleration()</code>で初期の加速度を求めておく</td></tr>
+        <tr><th>自己チェック</th><td>1行目は<code>orbit_euler.dat</code>と同一。エネルギー &asymp; &minus;4.4&times;10<sup>8</sup></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    <code>orbit_euler.dat</code>と<code>orbit_leapfrog.dat</code>の両方を出力したら、以下のスクリプトで
+    軌道の形とエネルギーの時間変化をそれぞれ比較してみましょう。
+  </p>
+
+  <div class="code-file">
+    <div class="code-file-header">
+      <code>day3_plot_orbit.gp</code>
+      <a href="code/day3_plot_orbit.gp" download>ダウンロード</a>
+    </div>
+    <pre><code>{{FILE:day3_plot_orbit.gp}}</code></pre>
+  </div>
+
+  <div class="code-file">
+    <div class="code-file-header">
+      <code>day3_plot_energy.gp</code>
+      <a href="code/day3_plot_energy.gp" download>ダウンロード</a>
+    </div>
+    <pre><code>{{FILE:day3_plot_energy.gp}}</code></pre>
+  </div>
+
+  <div class="point-box">
+    <span class="label">見えてくること</span>
+    Euler法では、軌道がだんだん外側にらせん状にずれていき、エネルギーも時間とともに増加し続けます。
+    一方リープ・フロッグ法では、同じ刻み幅・同じ計算量にもかかわらず、軌道はほぼ閉じた円を保ち、
+    エネルギーもほとんど一定に保たれます。「1ステップあたりの計算コストがほぼ同じでも、
+    アルゴリズムの選び方で結果の質が大きく変わる」ことを実感してください。
+  </div>
+
+  <h3>発展課題：N体シミュレーション <span class="opt-tag">発展</span></h3>
+  <p>
+    時間に余裕があれば、太陽・地球・木星の3天体が互いに重力を及ぼし合う、
+    より一般的なN体シミュレーションに挑戦してみましょう。2体問題では固定していた太陽自身も、
+    地球や木星からの重力を受けてわずかに動く（自転ではなく公転運動としての「ふらつき」）
+    ことが確認できます。この「中心星のふらつき」は、実際の系外惑星探索における
+    視線速度法の観測原理でもあります。
+  </p>
+  <div class="task-box">
+    <span class="label">改造のポイント</span>
+    位置・速度・加速度を、天体数分の配列（<code>x[N]</code>, <code>y[N]</code>など）として持つように拡張し、
+    ある天体 i が受ける加速度を、それ以外のすべての天体 j からの重力の総和として計算します
+    （2重ループになります）。更新のアルゴリズム自体はリープ・フロッグ法のまま、全天体分について
+    同時に行います。
+  </div>
+
+  <div class="spec-box">
+    <span class="label">出力仕様</span>
+    <p>この仕様どおりにファイルを出力すれば、このページに掲載しているgnuplotスクリプトがそのまま動作します。仕様を頼りに、自分のプログラムを完成させてください。</p>
+    <table>
+      <tbody>
+        <tr><th>出力ファイル</th><td><code>nbody.dat</code></td></tr>
+        <tr><th>書式</th><td>テキストファイル、空白区切り、1行に1データ。<code>#</code>で始まる行はコメントとして扱われ、gnuplotは無視します（見出し行を入れても構いません）。</td></tr>
+        <tr><th>列（7列）</th><td>1列目：時刻 <code>t</code> [s]　／　2, 3列目：太陽の <code>x, y</code>　／　4, 5列目：地球の <code>x, y</code>　／　6, 7列目：木星の <code>x, y</code>（単位はすべて m）</td></tr>
+        <tr><th>質量 [kg]</th><td>太陽 <code>1.989e30</code>、地球 <code>5.972e24</code>、木星 <code>1.898e27</code>。<code>G = 6.674e-11</code></td></tr>
+        <tr><th>初期条件</th><td>太陽：原点、速度0。地球：<code>(1.496e11, 0)</code>、速度 <code>(0, 2.978e4)</code>。木星：<code>(7.785e11, 0)</code>、速度 <code>(0, 1.307e4)</code></td></tr>
+        <tr><th>計算条件</th><td>リープ・フロッグ法、<code>dt = 6 &times; 3600</code> s、<code>nsteps = 4 * 365 * 12</code>（約12年分）。各ステップで更新前の状態を出力</td></tr>
+        <tr><th>データ行数</th><td>17521行（初期状態＋17520ステップ分）</td></tr>
+      </tbody>
+    </table>
+    <p class="spec-note">太陽の初期速度を0としているため、系全体の運動量は0になりません。そのため太陽は、惑星に引かれるふらつきに加えて、<code>y</code>方向へゆっくり流れていきます。</p>
+  </div>
+
+  <div class="code-file">
+    <div class="code-file-header">
+      <code>day3_plot_nbody.gp</code>
+      <a href="code/day3_plot_nbody.gp" download>ダウンロード</a>
+    </div>
+    <pre><code>{{FILE:day3_plot_nbody.gp}}</code></pre>
+  </div>
+
+  <p>
+    さらに余裕があれば、木星の質量を10倍にする、天体をもう1つ追加する、
+    初期速度を変えて楕円軌道にする、といった改造で遊んでみてください。
+    お疲れさまでした。最後に、<a href="index.html#report">レポート課題</a>を確認してください。
+  </p>
+</section>

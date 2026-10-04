@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第1回 地球のエネルギー収支モデル | 地球と惑星のモデリング</title>
+<meta name="description" content="第1回: 放射平衡の考え方で惑星の平衡温度を計算し、太陽定数を振ってT–S曲線を描く。">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+</head>
+<body>
+
+<header class="hero hero-sm">
+  <div class="kicker">情報工学実験 &middot; 地球と惑星のモデリング</div>
+  <span class="day-badge">第1回</span>
+  <h1>地球のエネルギー収支モデル</h1>
+</header>
+
+<nav class="toc">
+  <ul>
+    <li><a href="index.html">概要</a></li>
+    <li><a href="day1.html" aria-current="page">第1回</a></li>
+    <li><a href="day2.html">第2回</a></li>
+    <li><a href="day3.html">第3回</a></li>
+    <li><a href="index.html#report">レポート課題</a></li>
+    <li><a href="index.html#reference">付録・参考値</a></li>
+    <li><a href="index.html#books">参考図書</a></li>
+  </ul>
+</nav>
+
+<div class="wrap">
+
+<section class="day-page">
+  <div class="goal-box">
+    <h4>この回のねらい</h4>
+    <ul>
+      <li>「放射平衡」という考え方で惑星の温度をモデル化できることを理解する</li>
+      <li>物理の式をそのままCのプログラムに落とし込む感覚をつかむ</li>
+      <li>パラメータを系統的に振ってファイルに出力し、gnuplotでグラフにする一連の流れに慣れる</li>
+    </ul>
+  </div>
+
+  <h3>座学：放射平衡モデル</h3>
+  <p>
+    惑星が太陽から受け取るエネルギーと、惑星自身が宇宙空間へ放出するエネルギーが釣り合っている状態を
+    「放射平衡」と呼びます。太陽定数（惑星の軌道での単位面積あたりの日射量）を $S$、
+    惑星表面のアルベド（反射率）を $\alpha$ 、惑星の半径を$R$とすると、惑星が単位時間あたりに吸収するエネルギーは
+    次のように書けます。
+  </p>
+  <p>
+    $$S(1-\alpha)\cdot \pi R^2.$$
+  </p>
+  <p>
+    一方、温度 $T$ の物体が黒体放射として単位面積あたりに放出するエネルギーは、シュテファン・ボルツマンの法則より
+  </p>
+  <p>
+    $$\varepsilon \sigma T^4$$
+  </p>
+  <p>
+    です（$\varepsilon$は放射率、$\sigma$はシュテファン・ボルツマン定数）。惑星全体の表面積は $4\pi R^2$ なので、
+    惑星全体が放出するエネルギーは $4\pi R^2\cdot\varepsilon\sigma T^4$ になります。
+    この2つが釣り合う（吸収 = 放出）と置くと
+  </p>
+  <p>
+    $$S(1-\alpha)\,\pi R^2 = 4\pi R^2\,\varepsilon\sigma T^4$$
+  </p>
+  <p>
+    となり、$R$ が消えます。これを $T$ について解くと、
+  </p>
+  <p>
+    $$T = \left[\frac{S(1-\alpha)}{4\varepsilon\sigma}\right]^{1/4}$$
+  </p>
+  <p>
+    という平衡温度の式が得られます。これが今日の出発点です。
+  </p>
+
+  <h3>実験1：平衡温度を計算する</h3>
+  <p>
+    まずは上の式をそのままCのプログラムにしただけの、最も単純なテンプレートを動かしてみましょう。
+    定数を代入して T を1回計算し、表示するだけのプログラムです。
+  </p>
+
+  <div class="code-file">
+    <div class="code-file-header">
+      <code>day1_eq_temp_base.c</code>
+      <a href="code/day1_eq_temp_base.c" download>ダウンロード</a>
+    </div>
+    <pre><code>/*
+ * day1_eq_temp_base.c
+ * 第1回: 地球のエネルギー収支モデル（0次元モデル）
+ *
+ * 放射平衡の式  S(1-a)/4 = eps * sigma * T^4  を解いて
+ * 平衡温度 T を1回だけ計算する、最も単純な version。
+ */
+#include &lt;stdio.h&gt;
+#include &lt;math.h&gt;
+
+int main(void)
+{
+    double S       = 1361.0;            /* 太陽定数 [W/m^2] */
+    double albedo  = 0.30;              /* アルベド（無次元） */
+    double epsilon = 1.0;               /* 放射率（無次元） */
+    double sigma   = 5.670374419e-8;    /* シュテファン・ボルツマン定数 [W/(m^2 K^4)] */
+
+    double T = pow(S * (1.0 - albedo) / (4.0 * epsilon * sigma), 0.25);
+
+    printf(&quot;S = %.1f W/m^2, albedo = %.2f, epsilon = %.2f\n&quot;, S, albedo, epsilon);
+    printf(&quot;-&gt; 平衡温度 T = %.2f K (%.2f C)\n&quot;, T, T - 273.15);
+
+    return 0;
+}
+</code></pre>
+  </div>
+
+  <p>このプログラムをコンパイル・実行し、地球の平衡温度（およそ255K、摂氏でおよそ&minus;18℃）が計算されることを確認してください。</p>
+
+  <div class="point-box">
+    <span class="label">確認してみよう</span>
+    実際の地球の平均気温（約15℃、288K）と比べて、計算結果はかなり低い値になっているはずです。
+    このズレはなぜ生まれるのでしょうか？
+    （ヒント：このモデルが置いている仮定と、実際の地球とを比べてみましょう。
+    <code>albedo</code>や<code>epsilon</code>の値を変えると、計算結果がどう変わるかも試してみてください。）
+    <details>
+      <summary>考察の答えを見る</summary>
+      このモデルには大気の温室効果が入っていません。<code>epsilon</code>を1より小さくすると
+      温室効果を簡易的に表現でき、計算結果が実際の気温に近づきます。
+    </details>
+  </div>
+
+  <h3>課題1：太陽定数を振ってグラフにする</h3>
+  <div class="task-box">
+    <span class="label">改造のポイント</span>
+    <code>day1_eq_temp_base.c</code>を改造して、太陽定数 <code>S</code> をある範囲でループさせながら
+    平衡温度 <code>T</code> を計算し、<code>(S, T)</code>の組をファイルに書き出すプログラムにしてください。
+    具体的には、(1) 平衡温度の計算を関数として切り出す、(2) <code>fopen</code>でファイルを開く、
+    (3) <code>for</code>文で<code>S</code>を少しずつ増やしながら<code>fprintf</code>で書き出す、という3点を追加します。
+  </div>
+
+  <div class="spec-box">
+    <span class="label">出力仕様</span>
+    <p>この仕様どおりにファイルを出力すれば、このページに掲載しているgnuplotスクリプトがそのまま動作します。解答例は示しませんので、仕様を頼りに、自分のプログラムを完成させてください。</p>
+    <table>
+      <tbody>
+        <tr><th>出力ファイル</th><td><code>eq_temp.dat</code>（プログラムを実行したフォルダに作成）</td></tr>
+        <tr><th>書式</th><td>テキストファイル、空白区切り、1行に1データ。<code>#</code>で始まる行はコメントとして扱われ、gnuplotは無視します（見出し行を入れても構いません）。</td></tr>
+        <tr><th>列</th><td>1列目：太陽定数 <code>S</code> [W/m²]　／　2列目：平衡温度 <code>T</code> [K]</td></tr>
+        <tr><th>計算条件</th><td><code>albedo = 0.30</code>、<code>epsilon = 1.0</code>。<code>S</code>は800から2000まで10刻み（両端を含む）</td></tr>
+        <tr><th>データ行数</th><td>121行（コメント行を除く）</td></tr>
+        <tr><th>自己チェック</th><td><code>S = 800</code> のとき <code>T</code> &asymp; 222.9 K、<code>S = 2000</code> のとき <code>T</code> &asymp; 280.3 K</td></tr>
+      </tbody>
+    </table>
+    <p class="spec-note">行数が120行になる場合は、ループの終了条件（<code>&lt;=</code>か<code>&lt;</code>か）を見直してみましょう。</p>
+  </div>
+
+  <p>出力された<code>eq_temp.dat</code>は、以下のgnuplotスクリプトでグラフにできます。</p>
+  <div class="code-file">
+    <div class="code-file-header">
+      <code>day1_plot_eq_temp.gp</code>
+      <a href="code/day1_plot_eq_temp.gp" download>ダウンロード</a>
+    </div>
+    <pre><code># day1_plot_eq_temp.gp
+# 改造課題で作成したプログラムが出力する eq_temp.dat（1列目: S, 2列目: T）を可視化する。
+# 使い方: gnuplot day1_plot_eq_temp.gp
+
+set title &quot;太陽定数 S と平衡温度 T の関係&quot;
+set xlabel &quot;太陽定数 S [W/m^2]&quot;
+set ylabel &quot;平衡温度 T [K]&quot;
+set grid
+set key left top
+
+plot &quot;eq_temp.dat&quot; using 1:2 with lines lw 2 title &quot;T(S)  (albedo=0.30)&quot;
+
+pause -1 &quot;何かキーを押すと終了します&quot;
+</code></pre>
+  </div>
+
+  <h3>発展課題</h3>
+  <p>
+    アルベド $\alpha$ や放射率 $\varepsilon$ を変えると T–S 曲線はどう変わるでしょうか。
+    金星（$\alpha \approx 0.75$）・地球（$\alpha \approx 0.30$）・火星（$\alpha \approx 0.25$）のアルベドと実際の太陽定数を使って
+    平衡温度を計算し、実際の観測される温度と比較してみましょう。
+  </p>
+</section>
+<div class="pager">
+  <a class="prev" href="index.html"><span class="pager-label">&larr; 前へ</span>全体の概要：実験の進め方・gnuplotのインストール</a>
+  <a class="next" href="day2.html"><span class="pager-label">次へ &rarr;</span>第2回：Euler法とエネルギーバランスモデルの時間発展</a>
+</div>
+</div>
+
+<footer>
+  地球と惑星のモデリング &middot; 情報工学実験
+</footer>
+
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/auto-render.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: "$$", right: "$$", display: true },
+        { left: "$", right: "$", display: false }
+      ],
+      throwOnError: false
+    });
+  });
+</script>
+
+</body>
+</html>

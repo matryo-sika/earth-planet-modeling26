@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>第2回 Euler法とエネルギーバランスモデルの時間発展 | 地球と惑星のモデリング</title>
+<meta name="description" content="第2回: Euler法を確認し、放射収支モデルの時間発展と氷アルベドフィードバック（ヒステリシス）を調べる。">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+</head>
+<body>
+
+<header class="hero hero-sm">
+  <div class="kicker">情報工学実験 &middot; 地球と惑星のモデリング</div>
+  <span class="day-badge">第2回</span>
+  <h1>Euler法とエネルギーバランスモデルの時間発展</h1>
+</header>
+
+<nav class="toc">
+  <ul>
+    <li><a href="index.html">概要</a></li>
+    <li><a href="day1.html">第1回</a></li>
+    <li><a href="day2.html" aria-current="page">第2回</a></li>
+    <li><a href="day3.html">第3回</a></li>
+    <li><a href="index.html#report">レポート課題</a></li>
+    <li><a href="index.html#reference">付録・参考値</a></li>
+    <li><a href="index.html#books">参考図書</a></li>
+  </ul>
+</nav>
+
+<div class="wrap">
+
+<section class="day-page">
+  <div class="goal-box">
+    <h4>この回のねらい</h4>
+    <ul>
+      <li>常微分方程式を数値的に解く最も基本的な方法（Euler法）の仕組みと限界を理解する</li>
+      <li>「テンプレートの一部分を書き換えるだけで別の物理現象を解ける」ことを体験する</li>
+      <li>単純なフィードバック（氷アルベドフィードバック）が非線形な振る舞い（ヒステリシス）を生むことを見る</li>
+    </ul>
+  </div>
+
+  <h3>座学：Euler法</h3>
+  <p>
+    時間とともに変化する量 $T(t)$ が、常微分方程式
+  </p>
+  <p>$$\frac{dT}{dt} = f(T)$$</p>
+  <p>
+    に従うとします。Euler法は、時刻を $\Delta t$ ずつの小さな刻みに区切り、各ステップで
+  </p>
+  <p>
+    $$T_{n+1} = T_n + \Delta t \cdot f(T_n)$$
+  </p>
+  <p>
+    と更新していくだけの、最も単純な数値解法です。「現在の傾き $f(T_n)$ を使って、
+    $\Delta t$ だけ先の値を直線近似で予測する」という考え方で、for文1つで実装できます。
+    刻み幅 $\Delta t$ を大きくしすぎると、この直線近似の誤差が蓄積し、計算が振動したり発散したりする
+    （数値的に不安定になる）ことが知られています。
+  </p>
+
+  <h3>実験1：ニュートンの冷却則でEuler法を確認する</h3>
+  <p>
+    まずは挙動が直感的にわかりやすい題材として、周囲より温度の高い物体が徐々に冷えていく
+    「ニュートンの冷却則」 $\dfrac{dT}{dt} = -k(T - T_{\text{env}})$ をEuler法で解いてみます。
+    このプログラムの構造（forループでtとTを少しずつ更新していく部分）を、
+    このあとの放射収支モデルにも、<a href="day3.html">次回の重力多体問題</a>にも、そのまま使い回します。
+  </p>
+
+  <div class="code-file">
+    <div class="code-file-header">
+      <code>day2_newton_cooling.c</code>
+      <a href="code/day2_newton_cooling.c" download>ダウンロード</a>
+    </div>
+    <pre><code>/*
+ * day2_newton_cooling.c
+ * 第2回: Euler法の確認用テンプレート
+ *
+ * ニュートンの冷却則  dT/dt = -k (T - T_env)  を
+ * 陽的Euler法（前進差分）で数値的に解く、最も単純な例。
+ * この構造（forループで t, T を少しずつ更新していく）を
+ * このあとの課題でそのまま使い回す。
+ *
+ * 改造課題: dt（時間刻み）を大きくしてみるとどうなるか確認しよう。
+ *           ある程度以上大きくすると、Tが振動したり発散したりする
+ *           （数値不安定）ことを確認する。
+ */
+#include &lt;stdio.h&gt;
+
+int main(void)
+{
+    double T     = 350.0;   /* 初期温度 [K] */
+    double T_env = 300.0;   /* 周囲の温度 [K] */
+    double k     = 0.05;    /* 冷却係数 [1/s] */
+    double dt    = 1.0;     /* 時間刻み [s] （ここを変えて安定性を確認） */
+    double t_end = 200.0;   /* 計算を終了する時刻 [s] */
+
+    FILE *fp = fopen(&quot;cooling.dat&quot;, &quot;w&quot;);
+    if (fp == NULL) {
+        fprintf(stderr, &quot;output file cannot be opened.\n&quot;);
+        return 1;
+    }
+
+    fprintf(fp, &quot;# t[s]  T[K]\n&quot;);
+    for (double t = 0.0; t &lt;= t_end; t += dt) {
+        fprintf(fp, &quot;%.3f %.6f\n&quot;, t, T);
+
+        double dTdt = -k * (T - T_env);   /* f(T) = dT/dt */
+        T = T + dt * dTdt;                /* Euler法の更新式: T_{n+1} = T_n + dt * f(T_n) */
+    }
+
+    fclose(fp);
+    printf(&quot;cooling.dat を出力しました。\n&quot;);
+    return 0;
+}
+</code></pre>
+  </div>
+
+  <div class="code-file">
+    <div class="code-file-header">
+      <code>day2_plot_cooling.gp</code>
+      <a href="code/day2_plot_cooling.gp" download>ダウンロード</a>
+    </div>
+    <pre><code># day2_plot_cooling.gp
+# day2_newton_cooling.c が出力する cooling.dat を可視化する。
+# dt を変えて再実行し、結果を比較してみよう。
+# 使い方: gnuplot day2_plot_cooling.gp
+
+set title &quot;ニュートンの冷却則 (Euler法)&quot;
+set xlabel &quot;時刻 t [s]&quot;
+set ylabel &quot;温度 T [K]&quot;
+set grid
+
+plot &quot;cooling.dat&quot; using 1:2 with linespoints lw 2 pt 7 ps 0.5 title &quot;T(t)&quot;
+
+pause -1 &quot;何かキーを押すと終了します&quot;
+</code></pre>
+  </div>
+
+  <div class="point-box">
+    <span class="label">確認してみよう</span>
+    プログラム中の<code>dt</code>の値を少しずつ大きくして実行し直してみてください。
+    ある値を超えると、Tが滑らかに減少するのではなく振動し始め、さらに大きくすると発散してしまうはずです。
+    これがEuler法の数値不安定です。どのくらいの<code>dt</code>から様子がおかしくなるか、実際に確かめてみましょう。
+  </div>
+
+  <h3>課題1：放射収支モデルへの拡張</h3>
+  <p>
+    <a href="day1.html">第1回</a>では、吸収する日射と放出する赤外放射が釣り合った「平衡」の状態だけを調べました。
+    釣り合っていないとき、温度は時間とともにどう変化するのでしょうか。エネルギー保存則から考えてみます。
+  </p>
+  <p>
+    地表の面積 $1\,\mathrm{m}^2$ あたりの熱容量（温度を $1\,\mathrm{K}$ 上げるのに必要なエネルギー）を
+    $C$ [J/(m$^2$ K)] とすると、この部分が蓄えている熱エネルギーは $CT$ です。
+    これが増える速さは、入ってくるエネルギーと出ていくエネルギーの差に等しいので、
+  </p>
+  <p>
+    $$C\frac{dT}{dt} = (\text{吸収する日射}) - (\text{放出する赤外放射})$$
+  </p>
+  <p>
+    と書けます（どちらも単位面積・単位時間あたりのエネルギー、つまり W/m$^2$ です）。
+    第1回で見たように、惑星全体で吸収する日射 $S(1-\alpha)\pi R^2$ を表面積 $4\pi R^2$ で割ると、
+    単位面積あたり $S(1-\alpha)/4$ になります。放出する赤外放射は単位面積あたり $\varepsilon\sigma T^4$ なので、
+  </p>
+  <p>
+    $$C\frac{dT}{dt} = \frac{S(1-\alpha)}{4} - \varepsilon\sigma T^4$$
+  </p>
+  <p>
+    が得られます。右辺が0になる温度が、第1回で求めた平衡温度です。$T$ がそれより低ければ右辺は正（温度が上がる）、
+    高ければ負（温度が下がる）ので、$T$ は平衡温度に近づいていくはずです。
+    両辺を $C$ で割れば $\dfrac{dT}{dt} = f(T)$ の形になり、前節のEuler法でそのまま解けます。
+    $C$ は、深さ100 m程度の海洋の混合層を想定し、水の密度 $10^3\,\mathrm{kg/m^3}$ と比熱 $4\times10^3\,\mathrm{J/(kg\,K)}$ から
+    $C \approx 4\times10^{8}$ J/(m$^2$ K) とします。
+  </p>
+  <div class="task-box">
+    <span class="label">改造のポイント</span>
+    <code>day2_newton_cooling.c</code>の更新式（<code>T = T + dt * dTdt;</code>）はそのままに、
+    <code>dTdt</code>の中身だけを、上で導いた式の右辺
+    $\dfrac{1}{C}\left[\dfrac{S(1-\alpha)}{4} - \varepsilon\sigma T^4\right]$ に置き換えてください。
+    冷却則が「周囲との温度差に比例して冷える」モデルだったのに対し、
+    今度は「吸収する日射」と「放出する赤外放射」の差で温度が変化するモデルになります。
+  </div>
+  
+  <div class="spec-box">
+    <span class="label">出力仕様</span>
+    <p>この仕様どおりにファイルを出力すれば、このページに掲載しているgnuplotスクリプトがそのまま動作します。仕様を頼りに、自分のプログラムを完成させてください。</p>
+    <table>
+      <tbody>
+        <tr><th>出力ファイル</th><td><code>ebm_time.dat</code></td></tr>
+        <tr><th>書式</th><td>テキストファイル、空白区切り、1行に1データ。<code>#</code>で始まる行はコメントとして扱われ、gnuplotは無視します（見出し行を入れても構いません）。</td></tr>
+        <tr><th>列</th><td>1列目：時刻 <code>t</code> [s]　／　2列目：温度 <code>T</code> [K]</td></tr>
+        <tr><th>計算条件</th><td><code>S = 1361</code> W/m²、<code>albedo = 0.30</code>、<code>epsilon = 1.0</code>、<code>C = 4.0e8</code> J/(m² K)、初期温度 250 K、<code>dt = 1.0e5</code> s、2000ステップ</td></tr>
+        <tr><th>出力のタイミング</th><td>各ステップで、<strong>更新する前の</strong>状態を出力する（1行目は初期状態 <code>t = 0</code>, <code>T = 250</code>）</td></tr>
+        <tr><th>データ行数</th><td>2001行（初期状態＋2000ステップ分）</td></tr>
+        <tr><th>自己チェック</th><td>最終行は <code>t</code> = 2.0&times;10<sup>8</sup> s、<code>T</code> &asymp; 253.86 K。250 K から単調に増加し、第1回の式で求めた平衡温度（約254.6 K）に近づいていれば正解です</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="code-file">
+    <div class="code-file-header">
+      <code>day2_plot_ebm_time.gp</code>
+      <a href="code/day2_plot_ebm_time.gp" download>ダウンロード</a>
+    </div>
+    <pre><code># day2_plot_ebm_time.gp
+# 改造課題で作成したプログラムが出力する ebm_time.dat（1列目: t, 2列目: T）を可視化する。
+# 使い方: gnuplot day2_plot_ebm_time.gp
+
+set title &quot;温度の時間発展 (Euler法)&quot;
+set xlabel &quot;時刻 t [s]&quot;
+set ylabel &quot;温度 T [K]&quot;
+set grid
+set key right bottom
+
+plot &quot;ebm_time.dat&quot; using 1:2 with lines lw 2 title &quot;放射収支モデル T(t)&quot;
+
+pause -1 &quot;何かキーを押すと終了します&quot;
+</code></pre>
+  </div>
+
+  <p>
+    初期温度を250Kからスタートさせ、時間とともに<a href="day1.html">第1回</a>で求めた平衡温度（約255K）へ近づいていく様子が
+    グラフで確認できるはずです。
+  </p>
+
+  <h3>発展課題：氷アルベドフィードバックとヒステリシス <span class="opt-tag">発展</span></h3>
+  <p>
+    ここまでは、アルベド$\alpha$を定数として扱ってきました。しかし実際の地球では、表面が氷や雪に覆われれば白くなって
+    アルベドが上がり、氷が融ければアルベドは下がります。つまり$\alpha$は温度$T$に依存します。
+    この「温度が下がる &rarr; 氷が増える &rarr; アルベドが上がる &rarr; 日射を反射して、さらに温度が下がる」という
+    正のフィードバックをモデルに組み込むと、何が起きるかを調べます。
+  </p>
+
+  <p><strong>1. アルベドを温度の関数にする。</strong>
+    最も単純なモデルとして、低温側（氷あり）ではアルベドを$\alpha_{\text{ice}}$、高温側（氷なし）では$\alpha_{\text{water}}$とし、
+    その間の温度範囲では直線でつなぐことにします。
+  </p>
+  <p>
+    $$\alpha(T)=\begin{cases}
+    \alpha_{\text{ice}} & (T\le T_{\text{ice}})\\[2pt]
+    \alpha_{\text{ice}}+(\alpha_{\text{water}}-\alpha_{\text{ice}})\dfrac{T-T_{\text{ice}}}{T_{\text{water}}-T_{\text{ice}}} & (T_{\text{ice}}\lt T\lt T_{\text{water}})\\[2pt]
+    \alpha_{\text{water}} & (T\ge T_{\text{water}})
+    \end{cases}$$
+  </p>
+  <p>
+    パラメータの値は、下の出力仕様に示します。基礎方程式は課題1の式の$\alpha$を$\alpha(T)$に置き換えるだけです。
+  </p>
+  <p>
+    $$C\frac{dT}{dt} = \frac{S\,\bigl(1-\alpha(T)\bigr)}{4} - \varepsilon\sigma T^4$$
+  </p>
+
+  <p><strong>2. 平衡状態はいくつあるか。</strong>
+    平衡状態とは、右辺が0になる（吸収する日射 = 放出する赤外放射）温度のことです。
+    下の図は、$S=2000\ \text{W/m}^2$の場合について、吸収と放出を温度の関数として描いたものです
+    （この図はモデルの式から計算した曲線で、実測データではありません）。
+  </p>
+  <figure class="fig">
+      <svg viewBox="0 0 600 360" role="img" aria-label="太陽定数2000 W/m²での、吸収する日射と放出する赤外放射の温度依存性。交点が3つある。" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;max-width:600px;display:block;margin:0 auto;font-family:inherit">
+      <rect x="64" y="24" width="512" height="278" fill="#fff" stroke="#dde2ea"/>
+      <line x1="137.1" y1="24" x2="137.1" y2="302" stroke="#eef0f4"/><text x="137.1" y="320" font-size="13" text-anchor="middle" fill="#5b6472">240</text>
+      <line x1="283.4" y1="24" x2="283.4" y2="302" stroke="#eef0f4"/><text x="283.4" y="320" font-size="13" text-anchor="middle" fill="#5b6472">260</text>
+      <line x1="429.7" y1="24" x2="429.7" y2="302" stroke="#eef0f4"/><text x="429.7" y="320" font-size="13" text-anchor="middle" fill="#5b6472">280</text>
+      <line x1="576.0" y1="24" x2="576.0" y2="302" stroke="#eef0f4"/><text x="576.0" y="320" font-size="13" text-anchor="middle" fill="#5b6472">300</text>
+      <line x1="64" y1="302.0" x2="576" y2="302.0" stroke="#eef0f4"/><text x="56" y="306.0" font-size="13" text-anchor="end" fill="#5b6472">100</text>
+      <line x1="64" y1="228.8" x2="576" y2="228.8" stroke="#eef0f4"/><text x="56" y="232.8" font-size="13" text-anchor="end" fill="#5b6472">200</text>
+      <line x1="64" y1="155.7" x2="576" y2="155.7" stroke="#eef0f4"/><text x="56" y="159.7" font-size="13" text-anchor="end" fill="#5b6472">300</text>
+      <line x1="64" y1="82.5" x2="576" y2="82.5" stroke="#eef0f4"/><text x="56" y="86.5" font-size="13" text-anchor="end" fill="#5b6472">400</text>
+      <text x="320" y="346" font-size="14" text-anchor="middle" fill="#1e2430">温度 T [K]</text>
+      <text transform="translate(18,163) rotate(-90)" font-size="14" text-anchor="middle" fill="#1e2430">エネルギーフラックス [W/m²]</text>
+      <polyline points="64.0,259.1 67.7,258.1 71.3,257.0 75.0,256.0 78.6,255.0 82.3,253.9 85.9,252.9 89.6,251.8 93.3,250.8 96.9,249.7 100.6,248.6 104.2,247.6 107.9,246.5 111.5,245.4 115.2,244.3 118.9,243.2 122.5,242.1 126.2,240.9 129.8,239.8 133.5,238.7 137.1,237.5 140.8,236.4 144.5,235.2 148.1,234.1 151.8,232.9 155.4,231.7 159.1,230.5 162.7,229.3 166.4,228.1 170.1,226.9 173.7,225.7 177.4,224.5 181.0,223.2 184.7,222.0 188.3,220.8 192.0,219.5 195.7,218.2 199.3,217.0 203.0,215.7 206.6,214.4 210.3,213.1 213.9,211.8 217.6,210.5 221.3,209.2 224.9,207.9 228.6,206.5 232.2,205.2 235.9,203.8 239.5,202.5 243.2,201.1 246.9,199.8 250.5,198.4 254.2,197.0 257.8,195.6 261.5,194.2 265.1,192.8 268.8,191.4 272.5,189.9 276.1,188.5 279.8,187.0 283.4,185.6 287.1,184.1 290.7,182.7 294.4,181.2 298.1,179.7 301.7,178.2 305.4,176.7 309.0,175.2 312.7,173.7 316.3,172.1 320.0,170.6 323.7,169.0 327.3,167.5 331.0,165.9 334.6,164.3 338.3,162.8 341.9,161.2 345.6,159.6 349.3,157.9 352.9,156.3 356.6,154.7 360.2,153.1 363.9,151.4 367.5,149.8 371.2,148.1 374.9,146.4 378.5,144.7 382.2,143.0 385.8,141.3 389.5,139.6 393.1,137.9 396.8,136.2 400.5,134.4 404.1,132.7 407.8,130.9 411.4,129.2 415.1,127.4 418.7,125.6 422.4,123.8 426.1,122.0 429.7,120.2 433.4,118.4 437.0,116.5 440.7,114.7 444.3,112.8 448.0,110.9 451.7,109.1 455.3,107.2 459.0,105.3 462.6,103.4 466.3,101.5 469.9,99.5 473.6,97.6 477.3,95.7 480.9,93.7 484.6,91.7 488.2,89.8 491.9,87.8 495.5,85.8 499.2,83.8 502.9,81.8 506.5,79.7 510.2,77.7 513.8,75.6 517.5,73.6 521.1,71.5 524.8,69.4 528.5,67.3 532.1,65.2 535.8,63.1 539.4,61.0 543.1,58.9 546.7,56.7 550.4,54.6 554.1,52.4 557.7,50.2 561.4,48.0 565.0,45.8 568.7,43.6 572.3,41.4 576.0,39.1" fill="none" stroke="#d1495b" stroke-width="2.5"/>
+      <polyline points="64.0,228.8 67.7,228.8 71.3,228.8 75.0,228.8 78.6,228.8 82.3,228.8 85.9,228.8 89.6,228.8 93.3,228.8 96.9,228.8 100.6,228.8 104.2,228.8 107.9,228.8 111.5,228.8 115.2,228.8 118.9,228.8 122.5,228.8 126.2,228.8 129.8,228.8 133.5,228.8 137.1,228.8 140.8,228.8 144.5,228.8 148.1,228.8 151.8,228.8 155.4,228.8 159.1,228.8 162.7,228.8 166.4,228.8 170.1,228.8 173.7,228.8 177.4,228.8 181.0,228.8 184.7,228.8 188.3,228.8 192.0,228.8 195.7,228.8 199.3,228.8 203.0,228.8 206.6,228.8 210.3,228.8 213.9,228.8 217.6,228.8 221.3,228.8 224.9,228.8 228.6,228.8 232.2,228.8 235.9,228.8 239.5,228.8 243.2,228.8 246.9,228.8 250.5,228.8 254.2,228.8 257.8,228.8 261.5,228.8 265.1,228.8 268.8,228.8 272.5,228.8 276.1,228.8 279.8,228.8 283.4,228.8 287.1,228.8 290.7,228.8 294.4,228.8 298.1,228.8 301.7,228.8 305.4,228.8 309.0,223.4 312.7,217.9 316.3,212.4 320.0,206.9 323.7,201.4 327.3,195.9 331.0,190.4 334.6,184.9 338.3,179.5 341.9,174.0 345.6,168.5 349.3,163.0 352.9,157.5 356.6,152.0 360.2,146.5 363.9,141.1 367.5,135.6 371.2,130.1 374.9,124.6 378.5,119.1 382.2,119.1 385.8,119.1 389.5,119.1 393.1,119.1 396.8,119.1 400.5,119.1 404.1,119.1 407.8,119.1 411.4,119.1 415.1,119.1 418.7,119.1 422.4,119.1 426.1,119.1 429.7,119.1 433.4,119.1 437.0,119.1 440.7,119.1 444.3,119.1 448.0,119.1 451.7,119.1 455.3,119.1 459.0,119.1 462.6,119.1 466.3,119.1 469.9,119.1 473.6,119.1 477.3,119.1 480.9,119.1 484.6,119.1 488.2,119.1 491.9,119.1 495.5,119.1 499.2,119.1 502.9,119.1 506.5,119.1 510.2,119.1 513.8,119.1 517.5,119.1 521.1,119.1 524.8,119.1 528.5,119.1 532.1,119.1 535.8,119.1 539.4,119.1 543.1,119.1 546.7,119.1 550.4,119.1 554.1,119.1 557.7,119.1 561.4,119.1 565.0,119.1 568.7,119.1 572.3,119.1 576.0,119.1" fill="none" stroke="#1f5fa8" stroke-width="2.5"/>
+      <text x="510.2" y="65.7" font-size="14" fill="#d1495b" text-anchor="end">放出  εσT⁴</text>
+      <text x="568.7" y="166.7" font-size="14" fill="#1f5fa8" text-anchor="end">吸収  S(1−α(T))/4</text>
+      <circle cx="164.2" cy="228.8" r="6" fill="#1e2430" stroke="#1e2430" stroke-width="2"/>
+      <text x="174.2" y="252.8" font-size="13" text-anchor="start" fill="#1e2430">冷たい解（安定）</text>
+      <circle cx="354.0" cy="155.8" r="6" fill="#fff" stroke="#1e2430" stroke-width="2"/>
+      <text x="344.0" y="143.8" font-size="13" text-anchor="end" fill="#1e2430">不安定</text>
+      <circle cx="431.9" cy="119.1" r="6" fill="#1e2430" stroke="#1e2430" stroke-width="2"/>
+      <text x="441.9" y="143.1" font-size="13" text-anchor="start" fill="#1e2430">暖かい解（安定）</text>
+      </svg>
+    <figcaption>吸収（青）と放出（赤）の交点が平衡状態。交点は3つある。
+      吸収が放出を上回る温度では$T$が上昇し、下回る温度では$T$が下降する。
+      このため、冷たい解と暖かい解は少し$T$がずれても元に戻る（安定、●）が、
+      中間の解はずれると離れていく（不安定、○）。</figcaption>
+  </figure>
+  <p>
+    アルベドが一定なら、吸収の曲線は水平な直線なので、交点は常に1つだけです。
+    ところが$\alpha(T)$が温度とともに下がると、吸収の曲線は$T_{\text{ice}}$〜$T_{\text{water}}$の間で立ち上がり、
+    放出の曲線と3回交わることがあります。$S$を変えると、吸収の曲線が上下に動きます。
+    $S$が小さいと冷たい解だけ、大きいと暖かい解だけが残り、その中間の範囲では
+    <strong>安定な平衡状態が2つ同時に存在</strong>します。
+  </p>
+
+  <p><strong>3. ヒステリシスの発生。</strong>
+    安定な解が2つあるとき、どちらに落ち着くかは「初期値」、つまりそれまでの経緯で決まります。
+    そこで、太陽定数$S$をゆっくり変えながら、各$S$での平衡温度を追いかけます。
+    $S$を小さい側から増やしていくと、温度は冷たい解に乗ったまま上がり、その解が消える$S$で
+    暖かい解へ一気にジャンプします。逆に、$S$を大きい側から減らしていくと、暖かい解に乗ったまま下がり、
+    その解が消える$S$で冷たい解へジャンプします。2つのジャンプが起きる$S$が異なるため、
+    増やす場合と減らす場合で、同じ$S$でも違う温度になる区間（ヒステリシス）が生まれます。
+  </p>
+
+  <div class="task-box">
+    <span class="label">改造のポイント</span>
+    課題1で作ったプログラムの定数だった<code>albedo</code>を、上の$\alpha(T)$にあたる関数<code>albedo(T)</code>に
+    置き換えます。さらに、太陽定数Sを外側のループでゆっくり変化させ、各Sで<code>T</code>が平衡に近づくまでEuler法で
+    時間積分する、という2重ループの構造にします。ポイントは、<strong>次のSでは、直前のSで得られた<code>T</code>を
+    初期値として引き継ぐ</strong>ことです（毎回初期化すると、「経緯」が失われてヒステリシスが現れません）。
+    Sを増加させていく場合と減少させていく場合とで、それぞれ結果をファイルに記録してください。
+  </div>
+
+  <div class="spec-box">
+    <span class="label">出力仕様</span>
+    <p>この仕様どおりにファイルを出力すれば、このページに掲載しているgnuplotスクリプトがそのまま動作します。仕様を頼りに、自分のプログラムを完成させてください。</p>
+    <table>
+      <tbody>
+        <tr><th>出力ファイル</th><td><code>hysteresis_up.dat</code>（Sを増加させた場合）と <code>hysteresis_down.dat</code>（Sを減少させた場合）の2つ</td></tr>
+        <tr><th>書式</th><td>テキストファイル、空白区切り、1行に1データ。<code>#</code>で始まる行はコメントとして扱われ、gnuplotは無視します（見出し行を入れても構いません）。</td></tr>
+        <tr><th>列</th><td>どちらも 1列目：太陽定数 <code>S</code> [W/m²]　／　2列目：そのSでの（ほぼ平衡に達した）温度 <code>T</code> [K]</td></tr>
+        <tr><th>アルベドの関数</th><td><code>albedo(T)</code>：<code>T &le; 263</code> K で0.60、<code>T &ge; 273</code> K で0.30、その間は線形補間（<code>a = 0.60 + (0.30 - 0.60) * (T - 263) / (273 - 263)</code>）</td></tr>
+        <tr><th>計算条件</th><td><code>epsilon = 1.0</code>、<code>C = 4.0e8</code>、<code>dt = 1.0e5</code> s。各<code>S</code>で3000ステップ積分してから<code>(S, T)</code>を1行出力する。<strong>次の<code>S</code>では、直前の<code>T</code>を引き継いで</strong>積分を続ける（<code>T</code>を初期化し直さない）</td></tr>
+        <tr><th>S の掃引</th><td>up：<code>T</code>を200 Kから出発し、<code>S</code>を800から3000まで10刻みで増加。down：<code>T</code>を350 Kから出発し、<code>S</code>を3000から800まで10刻みで減少</td></tr>
+        <tr><th>データ行数</th><td>それぞれ221行</td></tr>
+      </tbody>
+    </table>
+    <p class="spec-note">現実の太陽定数（約1361 W/m²）よりずっと大きい値まで振るのは、ループの全体像を見るための思考実験です。</p>
+  </div>
+
+  <div class="code-file">
+    <div class="code-file-header">
+      <code>day2_plot_hysteresis.gp</code>
+      <a href="code/day2_plot_hysteresis.gp" download>ダウンロード</a>
+    </div>
+    <pre><code># day2_plot_hysteresis.gp
+# 発展課題で作成したプログラムが出力する hysteresis_up.dat, hysteresis_down.dat
+# （各ファイル 1列目: S, 2列目: T）を可視化する。
+# 使い方: gnuplot day2_plot_hysteresis.gp
+
+set title &quot;氷アルベドフィードバックによるヒステリシス&quot;
+set xlabel &quot;太陽定数 S [W/m^2]&quot;
+set ylabel &quot;平衡温度 T [K]&quot;
+set grid
+set key left top
+
+plot &quot;hysteresis_up.dat&quot;   using 1:2 with lines lw 2 title &quot;Sを増加させた場合&quot;, \
+     &quot;hysteresis_down.dat&quot; using 1:2 with lines lw 2 title &quot;Sを減少させた場合&quot;
+
+pause -1 &quot;何かキーを押すと終了します&quot;
+</code></pre>
+  </div>
+
+  <div class="point-box">
+    <span class="label">見えてくること</span>
+    Sを増加させていく場合と減少させていく場合とで、同じ太陽定数でも異なる平衡温度に落ち着く
+    区間が現れ、グラフ上に「ジャンプ」を伴うループ（ヒステリシス）が現れます。
+    これは、ある太陽定数のもとでは「凍った地球（スノーボール・アース）」と「凍っていない地球」の両方が
+    安定な平衡状態になりうることを意味しています（多重平衡）。これは単純な線形モデルからは出てこない、
+    フィードバックのある非線形システムに特有の振る舞いです。
+  </div>
+</section>
+<div class="pager">
+  <a class="prev" href="day1.html"><span class="pager-label">&larr; 前へ</span>第1回：地球のエネルギー収支モデル</a>
+  <a class="next" href="day3.html"><span class="pager-label">次へ &rarr;</span>第3回：惑星の運動（重力多体問題）</a>
+</div>
+</div>
+
+<footer>
+  地球と惑星のモデリング &middot; 情報工学実験
+</footer>
+
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/katex/auto-render.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: "$$", right: "$$", display: true },
+        { left: "$", right: "$", display: false }
+      ],
+      throwOnError: false
+    });
+  });
+</script>
+
+</body>
+</html>

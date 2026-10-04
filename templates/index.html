@@ -1,0 +1,172 @@
+<section id="overview" class="overview">
+  <h2>実験の概要</h2>
+
+  <p>
+    この実験では、「地球」と「惑星」という2つのテーマを通して、自然現象を微分方程式でモデル化し、
+    それをコンピュータで数値的に解いて可視化する、という一連の流れを体験します。
+    第1回・第2回は地球のエネルギー収支（気候モデル）、第3回は惑星の運動（重力多体問題）を扱います。
+    各回の資料は、下のカードまたは上部のメニューから、回ごとのページで開いてください。
+  </p>
+
+  <div class="point-box">
+    <span class="label">この実験の進め方について</span>
+    毎回、まず「解きたい微分方程式」とその数値解法（アルゴリズム）の数式を確認します。
+    次に、その解法を使ったごく簡単なテンプレートプログラムを配布するので、
+    まずはそのまま動かして挙動を確認してください。そのうえで、テンプレートプログラムの一部分だけを
+    改造して、その回の本題（気候モデルや惑星の軌道など）を解くプログラムに仕立てていきます。
+    「アルゴリズムを一から書く」のではなく「動くコードのどこを変えれば目的の現象を再現できるか」
+    を考えてみてください。
+  </div>
+
+  <h3>各回の資料</h3>
+  <div class="day-cards">
+    <a class="day-card" href="day1.html">
+      <span class="day-card-num">第1回</span>
+      <span class="day-card-title">地球のエネルギー収支モデル</span>
+      <span class="day-card-desc">放射平衡の考え方で惑星の平衡温度を計算し、太陽定数を振ってT–S曲線を描く。</span>
+      <span class="day-card-go">第1回のページへ &rarr;</span>
+    </a>
+    <a class="day-card" href="day2.html">
+      <span class="day-card-num">第2回</span>
+      <span class="day-card-title">Euler法とエネルギーバランスモデルの時間発展</span>
+      <span class="day-card-desc">Euler法を確認し、放射収支モデルの時間発展へ拡張する。発展課題で氷アルベドフィードバックとヒステリシスを調べる。</span>
+      <span class="day-card-go">第2回のページへ &rarr;</span>
+    </a>
+    <a class="day-card" href="day3.html">
+      <span class="day-card-num">第3回</span>
+      <span class="day-card-title">惑星の運動（重力多体問題）</span>
+      <span class="day-card-desc">2体問題をEuler法で解き、リープ・フロッグ法に改造してエネルギー保存を比較。発展としてN体へ拡張。</span>
+      <span class="day-card-go">第3回のページへ &rarr;</span>
+    </a>
+  </div>
+
+  <h3>スケジュール</h3>
+  <table class="schedule">
+    <tr>
+      <th>回</th><th>テーマ</th><th>座学</th><th>実験</th>
+    </tr>
+    <tr>
+      <td><a href="day1.html">第1回</a></td>
+      <td>地球のエネルギー収支モデル（0次元モデル）</td>
+      <td>放射平衡、アルベド、モデル化の考え方</td>
+      <td>平衡温度の計算 &rarr; 太陽定数を振ってT–S曲線を描く</td>
+    </tr>
+    <tr>
+      <td><a href="day2.html">第2回</a></td>
+      <td>Euler法の確認とEBMの時間発展、氷アルベドフィードバック</td>
+      <td>常微分方程式の数値解法（Euler法）とその安定性</td>
+      <td>冷却モデル &rarr; 放射収支モデルへ改造 &rarr;（発展）氷アルベドフィードバックとヒステリシス</td>
+    </tr>
+    <tr>
+      <td><a href="day3.html">第3回</a></td>
+      <td>惑星の運動（重力2体問題とN体シミュレーション）</td>
+      <td>万有引力、Euler法の限界とリープ・フロッグ法</td>
+      <td>単振動 &rarr; 2体問題(Euler法) &rarr; リープ・フロッグ法へ改造 &rarr;（発展）3体以上のN体シミュレーション</td>
+    </tr>
+  </table>
+
+  <h3>gnuplotのインストール（Windows）</h3>
+  <p>
+      Windows環境でのgnuplotのインストール方法を説明します。
+  </p>
+  <ol>
+    <li>
+      <a href="https://sourceforge.net/projects/gnuplot/files/gnuplot/" target="_blank" rel="noopener">gnuplot公式ダウンロードページ（SourceForge）</a>
+      にアクセスし、最新版のフォルダを開いて、Windows用インストーラ
+      （<code>gpXXX-win64-mingw.exe</code>のような名前のファイル）をダウンロードします。
+    </li>
+    <li>ダウンロードしたインストーラをダブルクリックして実行します。</li>
+    <li>
+      インストール中の「Select Additional Tasks」の画面で、
+      <strong>「Add application directory to your PATH environment variable」</strong>
+      に必ずチェックを入れてください。これを忘れると、PowerShellから<code>gnuplot</code>コマンドが使えません。
+    </li>
+    <li>それ以外の設定はデフォルトのまま「Next」で進み、インストールを完了させます。</li>
+    <li>
+      インストール後、開いていたPowerShellは一度閉じ、新しく開き直してから
+      以下のコマンドで動作確認をします。
+    </li>
+  </ol>
+  <div class="code-file">
+    <div class="code-file-header"><code>動作確認（PowerShell）</code></div>
+    <pre><code>gnuplot --version</code></pre>
+  </div>
+  <p>
+    バージョン情報が表示されればインストール成功です。もし
+    <code>'gnuplot' は、内部コマンドまたは外部コマンド、操作可能なプログラムまたはバッチ ファイルとして認識されていません。</code>
+    のようなエラーが出る場合は、PATHへの追加がうまくいっていません。インストーラをもう一度実行し、
+    手順3のチェックボックスにチェックが入っているか確認してください。
+  </p>
+  <p>
+    gnuplotスクリプトは、PowerShellで<code>gnuplot ファイル名.gp</code>のように実行します。
+    ウィンドウにグラフが表示され、そのウィンドウを選択した状態で何かキーを押すと終了します。
+  </p>
+
+  <h3>配布ファイル一覧</h3>
+  <p>
+    この実験で使うC言語のプログラムとgnuplotスクリプトは、すべて<code>code/</code>フォルダにまとめてあります。
+    各回のページのコードブロック右上の「ダウンロード」からも個別に取得できます。
+  </p>
+</section>
+
+<section id="report" class="reference">
+  <h2>レポート課題</h2>
+  <div class="card">
+    <p>各回で、以下のような形式でレポートをまとめてください。最低限、基本課題（単に「課題」と書いているもの）について取り組むようにしてください。</p>
+    <ol>
+      <li>第1章（導入）：その回で扱ったモデル（微分方程式）と数値解法を、自分の言葉で説明する</li>
+      <li>第2章（手法）：テンプレートからどこをどう改造したか、変更点を具体的に示す</li>
+      <li>第3章（結果）：実行した結果をグラフとともに示す</li>
+      <li>第4章（議論・考察）：結果から読み取れることと、モデルの限界・改善案について考察する</li>
+    </ol>
+    <p>
+      第2回・第3回では、Euler法と改良した解法（またはEuler法とパラメータ違い）を比較し、
+      違いが生まれる理由を数式のレベルで説明できるとなお良いです。
+    </p>
+    <p>
+      レポートは、印刷したものを330室前のレポートボックスに提出してください。期限は第3回翌週（月曜）の11時です。
+    </p>
+  </div>
+</section>
+
+<section id="reference" class="reference">
+  <h2>付録・使用した物理定数と初期値</h2>
+  <div class="card">
+    <table class="schedule">
+      <tr><th>記号</th><th>意味</th><th>値</th></tr>
+      <tr><td>$\sigma$</td><td>シュテファン・ボルツマン定数</td><td>$5.670374419\times10^{-8}$ W/(m$^2$K$^4$)</td></tr>
+      <tr><td>$S$</td><td>太陽定数（地球軌道での目安値）</td><td>$1361$ W/m$^2$</td></tr>
+      <tr><td>$G$</td><td>万有引力定数</td><td>$6.674\times10^{-11}$ m$^3$/(kg$\cdot$s$^2$)</td></tr>
+      <tr><td>$M_{\text{sun}}$</td><td>太陽の質量</td><td>$1.989\times10^{30}$ kg</td></tr>
+      <tr><td>$M_{\text{jupiter}}$</td><td>木星の質量</td><td>$1.898\times10^{27}$ kg</td></tr>
+      <tr><td>1 au</td><td>地球と太陽の平均距離</td><td>$1.496\times10^{11}$ m</td></tr>
+    </table>
+    <p>
+      これらの数値は、各回のテンプレートプログラムや出力仕様に定数として記載しています。
+      より正確な値が必要な場合は、天文学の教科書やIAU（国際天文学連合）の公表値を参照してください。
+    </p>
+  </div>
+</section>
+
+<section id="books" class="reference">
+  <h2>参考図書</h2>
+  <div class="card">
+    <ul>
+      <li>在田一則ほか 編『地球惑星科学入門』（北海道大学出版会）</li>
+      <li>泉賢太郎 著『数理の目で見る地球科学』（丸善出版）</li>
+      <li>住明正・安成哲三・山形俊男・増田耕一・阿部彩子・増田富士雄・余田成男 著『岩波講座 地球惑星科学11 気候変動論』（岩波書店）</li>
+      <li>
+        牧野淳一郎・福重俊幸・小久保英一郎・川井敦・台坂博・斎藤貴之・杉本大一郎
+        「N体シミュレーションの学校 教科書」国立天文台 計算天文学センター(CfCA)主催
+        「N体力学の学校」講義資料
+        （<a href="https://www.cfca.nao.ac.jp/content/n%E4%BD%93%E5%AD%A6%E6%A0%A1" target="_blank" rel="noopener">N体学校について</a>
+        ／<a href="https://www.cfca.nao.ac.jp/files/nbody_note_fy2022v2.pdf" target="_blank" rel="noopener">教科書PDF（2022年度版）</a>）
+      </li>
+    </ul>
+    <p>
+      第3回の重力多体シミュレーションについては、特に「N体力学の学校」の教科書が、
+      リープ・フロッグ法をはじめとする数値積分法の理論的な背景を丁寧に解説しており参考になります。
+      同スクールは国立天文台計算天文学センターが毎年1月頃に開催しており、教科書は開催年度ごとに更新されています。
+    </p>
+  </div>
+</section>
