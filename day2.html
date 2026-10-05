@@ -125,6 +125,7 @@ int main(void)
 # dt を変えて再実行し、結果を比較してみよう。
 # 使い方: gnuplot day2_plot_cooling.gp
 
+set encoding utf8
 set title &quot;ニュートンの冷却則 (Euler法)&quot;
 set xlabel &quot;時刻 t [s]&quot;
 set ylabel &quot;温度 T [K]&quot;
@@ -205,6 +206,7 @@ pause -1 &quot;何かキーを押すと終了します&quot;
 # 改造課題で作成したプログラムが出力する ebm_time.dat（1列目: t, 2列目: T）を可視化する。
 # 使い方: gnuplot day2_plot_ebm_time.gp
 
+set encoding utf8
 set title &quot;温度の時間発展 (Euler法)&quot;
 set xlabel &quot;時刻 t [s]&quot;
 set ylabel &quot;温度 T [K]&quot;
@@ -335,6 +337,7 @@ pause -1 &quot;何かキーを押すと終了します&quot;
 # （各ファイル 1列目: S, 2列目: T）を可視化する。
 # 使い方: gnuplot day2_plot_hysteresis.gp
 
+set encoding utf8
 set title &quot;氷アルベドフィードバックによるヒステリシス&quot;
 set xlabel &quot;太陽定数 S [W/m^2]&quot;
 set ylabel &quot;平衡温度 T [K]&quot;

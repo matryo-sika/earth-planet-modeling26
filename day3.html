@@ -154,6 +154,7 @@ int main(void)
 # 位置 x(t) とエネルギーの時間変化を2枚並べて表示する。
 # 使い方: gnuplot day3_plot_oscillator.gp
 
+set encoding utf8
 set multiplot layout 2,1
 set grid
 
@@ -243,6 +244,7 @@ pause -1 &quot;何かキーを押すと終了します&quot;
 # 軌道の形の違いを比較する。
 # 使い方: gnuplot day3_plot_orbit.gp
 
+set encoding utf8
 set title &quot;地球の軌道: Euler法 vs リープ・フロッグ法&quot;
 set xlabel &quot;x [m]&quot;
 set ylabel &quot;y [m]&quot;
@@ -268,6 +270,7 @@ pause -1 &quot;何かキーを押すと終了します&quot;
 # ほぼ一定に保たれることを確認する。
 # 使い方: gnuplot day3_plot_energy.gp
 
+set encoding utf8
 set title &quot;力学的エネルギー(単位質量あたり)の時間変化&quot;
 set xlabel &quot;時刻 t [s]&quot;
 set ylabel &quot;エネルギー [J/kg]&quot;
@@ -331,6 +334,7 @@ pause -1 &quot;何かキーを押すと終了します&quot;
 # 発展課題で作成したプログラムが出力する nbody.dat（太陽・地球・木星）を可視化する。
 # 使い方: gnuplot day3_plot_nbody.gp
 
+set encoding utf8
 set title &quot;太陽・地球・木星の軌道 (N体シミュレーション, リープ・フロッグ法)&quot;
 set xlabel &quot;x [m]&quot;
 set ylabel &quot;y [m]&quot;
