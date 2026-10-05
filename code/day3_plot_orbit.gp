@@ -4,6 +4,7 @@
 # 軌道の形の違いを比較する。
 # 使い方: gnuplot day3_plot_orbit.gp
 
+set encoding utf8
 set title "地球の軌道: Euler法 vs リープ・フロッグ法"
 set xlabel "x [m]"
 set ylabel "y [m]"

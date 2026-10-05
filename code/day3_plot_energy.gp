@@ -4,6 +4,7 @@
 # ほぼ一定に保たれることを確認する。
 # 使い方: gnuplot day3_plot_energy.gp
 
+set encoding utf8
 set title "力学的エネルギー(単位質量あたり)の時間変化"
 set xlabel "時刻 t [s]"
 set ylabel "エネルギー [J/kg]"

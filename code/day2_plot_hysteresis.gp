@@ -3,6 +3,7 @@
 # （各ファイル 1列目: S, 2列目: T）を可視化する。
 # 使い方: gnuplot day2_plot_hysteresis.gp
 
+set encoding utf8
 set title "氷アルベドフィードバックによるヒステリシス"
 set xlabel "太陽定数 S [W/m^2]"
 set ylabel "平衡温度 T [K]"

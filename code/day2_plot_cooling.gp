@@ -3,6 +3,7 @@
 # dt を変えて再実行し、結果を比較してみよう。
 # 使い方: gnuplot day2_plot_cooling.gp
 
+set encoding utf8
 set title "ニュートンの冷却則 (Euler法)"
 set xlabel "時刻 t [s]"
 set ylabel "温度 T [K]"

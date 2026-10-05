@@ -3,6 +3,7 @@
 # 位置 x(t) とエネルギーの時間変化を2枚並べて表示する。
 # 使い方: gnuplot day3_plot_oscillator.gp
 
+set encoding utf8
 set multiplot layout 2,1
 set grid
 

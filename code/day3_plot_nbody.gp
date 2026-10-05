@@ -2,6 +2,7 @@
 # 発展課題で作成したプログラムが出力する nbody.dat（太陽・地球・木星）を可視化する。
 # 使い方: gnuplot day3_plot_nbody.gp
 
+set encoding utf8
 set title "太陽・地球・木星の軌道 (N体シミュレーション, リープ・フロッグ法)"
 set xlabel "x [m]"
 set ylabel "y [m]"
